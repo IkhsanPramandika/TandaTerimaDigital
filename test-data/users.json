@@ -1,0 +1,17 @@
+{
+  "requester": {
+    "username": "",
+    "password": "",
+    "role": "Pembuat Tanda Terima"
+  },
+  "approver1": { "username": "", "password": "", "role": "Approver Level 1" },
+  "approver2": { "username": "", "password": "", "role": "Approver Level 2" },
+  "approver3": { "username": "", "password": "", "role": "Approver Level 3" },
+  "approver4": { "username": "", "password": "", "role": "Approver Level 4" },
+  "approver5": { "username": "", "password": "", "role": "Approver Level 5" },
+  "invalidUser": {
+    "username": "wronguser",
+    "password": "wrongpass",
+    "role": "Invalid User"
+  }
+}

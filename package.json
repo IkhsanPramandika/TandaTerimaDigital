@@ -1,0 +1,31 @@
+{
+  "name": "tanda-terima-digital-automation",
+  "version": "1.0.0",
+  "description": "Automation testing project for Tanda Terima Digital using Playwright + TypeScript with Page Object Model.",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:smoke": "playwright test --grep @smoke",
+    "test:regression": "playwright test --grep @regression",
+    "test:approver": "playwright test --grep @approver",
+    "codegen": "playwright codegen https://dev-myapps.intra.cmk.co.id/login",
+    "report": "playwright show-report",
+    "fetch:jira": "ts-node scripts/fetch-jira.ts"
+  },
+  "keywords": [
+    "playwright",
+    "typescript",
+    "automation",
+    "testing",
+    "pom"
+  ],
+  "author": "QA Automation Team",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.44.0",
+    "typescript": "^5.0.0",
+    "ts-node": "^10.9.0",
+    "dotenv": "^16.0.0",
+    "axios": "^1.6.0"
+  }
+}

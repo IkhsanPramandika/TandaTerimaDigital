@@ -1,0 +1,57 @@
+name: Playwright Tests - Tanda Terima Digital
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # 08:00 WIB (UTC+7) = 01:00 UTC
+    - cron: "0 1 * * *"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright tests
+        run: npx playwright test
+        env:
+          BASE_URL: ${{ secrets.BASE_URL }}
+          LOGIN_URL: ${{ secrets.LOGIN_URL }}
+          APP_URL: ${{ secrets.APP_URL }}
+          REQUESTER_USERNAME: ${{ secrets.REQUESTER_USERNAME }}
+          REQUESTER_PASSWORD: ${{ secrets.REQUESTER_PASSWORD }}
+          APPROVER1_USERNAME: ${{ secrets.APPROVER1_USERNAME }}
+          APPROVER1_PASSWORD: ${{ secrets.APPROVER1_PASSWORD }}
+          APPROVER2_USERNAME: ${{ secrets.APPROVER2_USERNAME }}
+          APPROVER2_PASSWORD: ${{ secrets.APPROVER2_PASSWORD }}
+          APPROVER3_USERNAME: ${{ secrets.APPROVER3_USERNAME }}
+          APPROVER3_PASSWORD: ${{ secrets.APPROVER3_PASSWORD }}
+          APPROVER4_USERNAME: ${{ secrets.APPROVER4_USERNAME }}
+          APPROVER4_PASSWORD: ${{ secrets.APPROVER4_PASSWORD }}
+          APPROVER5_USERNAME: ${{ secrets.APPROVER5_USERNAME }}
+          APPROVER5_PASSWORD: ${{ secrets.APPROVER5_PASSWORD }}
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
