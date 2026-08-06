@@ -11,7 +11,9 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # Self-hosted runner di mesin yang terhubung VPN kantor (bisa akses dev-*.intra.cmk.co.id).
+    # Runner cloud GitHub tidak bisa menjangkau intranet, jadi wajib self-hosted.
+    runs-on: self-hosted
     timeout-minutes: 60
 
     steps:
@@ -27,7 +29,7 @@ jobs:
         run: npm ci
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps
+        run: npx playwright install
 
       - name: Run Playwright tests
         run: npx playwright test

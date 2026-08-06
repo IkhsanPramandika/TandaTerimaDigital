@@ -115,11 +115,13 @@ Untuk generate feature docs otomatis dari Jira, jalankan `npm run fetch:jira`.
 
 ## 7. CI/CD
 
+- **Runner:** `self-hosted` — dijalankan di mesin (mis. laptop) yang **terhubung VPN kantor**, karena runner cloud GitHub tidak bisa mengakses `dev-*.intra.cmk.co.id`.
 - **Trigger:**
   - `push` ke branch `main`
   - `pull_request` ke branch `main`
   - `schedule` setiap hari pukul **09:00 WIB** (`cron: '0 2 * * *'` UTC)
 - **Workflow file:** `.github/workflows/playwright.yml`
+- **Syarat jadwal jalan:** mesin runner **menyala**, **VPN aktif**, dan **service runner berjalan** pada jam tersebut.
 
 ### GitHub Secrets yang diperlukan
 

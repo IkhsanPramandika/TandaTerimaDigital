@@ -15,8 +15,8 @@ export default defineConfig({
   // Retry: 2x di CI, 1x lokal (alur E2E/SSO kadang flaky pada full-suite run)
   retries: isCI ? 2 : 1,
 
-  // Parallel workers
-  workers: isCI ? 2 : 1,
+  // 1 worker: portal SSO membocorkan identitas bila banyak akun login paralel
+  workers: 1,
 
   // Reporters
   reporter: [["html"], ["list"]],
