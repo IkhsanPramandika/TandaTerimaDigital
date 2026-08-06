@@ -1,0 +1,61 @@
+{
+  "create": {
+    "jenis": "Pemberian",
+    "labelKolom": "Tambah",
+    "nilaiKolom": "SPP",
+    "kategori": "ATK",
+    "barang": {
+      "no": "1",
+      "merk": "Pena",
+      "namaBarang": "Kenko",
+      "satuan": "PCS",
+      "jumlah": 1,
+      "catatan": "CATATAN"
+    },
+    "jenisPenerima": "Internal",
+    "penerima": "PRAMANDIKA",
+    "alamat": "CMK",
+    "supir": "Supir CMK",
+    "mengetahui": [
+      "SARAH MAIDA ALIFAH NURINA",
+      "HARTO LIO WIJAYA",
+      "CLAUDIA ANINDITA CINDY"
+    ]
+  },
+  "createApproval": {
+    "jenis": "Pemberian",
+    "kategori": "ATK",
+    "barang": {
+      "no": "1",
+      "merk": "Pena",
+      "namaBarang": "Kenko",
+      "satuan": "PCS",
+      "jumlah": 1,
+      "catatan": "CATATAN"
+    },
+    "jenisPenerima": "Internal",
+    "penerima": "PRAMANDIKA",
+    "alamat": "CMK",
+    "supir": "Supir CMK",
+    "mengetahui": ["SARAH MAIDA ALIFAH NURINA"]
+  },
+  "approve": {
+    "level1": { "deskripsi": "SETUJU" },
+    "level2to4": { "catatan": "SETUJU" }
+  },
+  "reject": {
+    "level1": { "deskripsi": "DITOLAK - data tidak sesuai" }
+  },
+  "bukti": {
+    "fileBuktiPengiriman": "test-data/files/bukti-pengiriman.pdf",
+    "fileBuktiPenerimaan": "test-data/files/bukti-penerimaan.jpeg",
+    "kurir": {
+      "nama": "Ikhsan",
+      "noTelpon": "08123456789"
+    },
+    "geolocation": {
+      "latitude": -6.2088,
+      "longitude": 106.8456
+    }
+  }
+}

@@ -60,18 +60,27 @@ TC-001: [P26-1387] Membuat tanda terima baru @smoke @positive
 
 ---
 
-## 5. Approver Sequence
+## 5. Approver Sequence & Alur E2E
 
-- **Minimal:** 2 approver
-- **Maksimal:** 5 approver
-- **Flow persetujuan berjenjang:**
+- **Atasan 1** ditetapkan **otomatis** oleh sistem dari struktur organisasi requester (tidak dipilih di form).
+- **Mengetahui** dipilih manual di form (berantai). Gunakan **nama lengkap** agar tidak salah pilih orang.
+- Aplikasi **tidak** menampilkan popup/toast sukses — sukses = redirect kembali ke daftar `/TandaTerima`.
+
+**Flow persetujuan + bukti (tervalidasi E2E):**
 
 ```
-Requester → Approver1 → Approver2 → ... → Approver(n) → Approved
+Requester create ─▶ Atasan 1 (Setuju) ─▶ Mengetahui (Setuju)
+   ─▶ Requester upload Bukti Pengiriman            (status: Dalam Pengiriman)
+   ─▶ buka link QR ─▶ upload Bukti Penerimaan       (status: Selesai)
+      (foto + nama kurir + no. telp + geolokasi)
 ```
 
 Setiap approver hanya bisa menyetujui jika approver level sebelumnya telah menyetujui.
-Jika salah satu approver menolak, alur berhenti (Rejected).
+Jika Atasan 1 menolak, alur berhenti (Rejected).
+
+> Catatan eksekusi: portal SSO membocorkan identitas antar-context bila beberapa akun login
+> bersamaan, sehingga tiap peran dijalankan **berurutan** di context terpisah (open → login →
+> act → close) via helper `withUser`. Upload penerimaan butuh **izin geolokasi** di context.
 
 ---
 
@@ -86,19 +95,19 @@ Jika salah satu approver menolak, alur berhenti (Rejected).
 
 ### Child Tickets Epic P26-283
 
-| Ticket   | Modul                                           |
-| -------- | ----------------------------------------------- |
-| P26-1365 | Modul Kategori Tanda Terima                     |
-| P26-1375 | Modul Tambah Kategori Tanda Terima              |
-| P26-1387 | Modul Tanda Terima Digital                      |
-| P26-1397 | Modul Tambah Tanda Terima                       |
-| P26-1440 | Modul Edit Tanda Terima                         |
-| P26-1445 | Modul Pratinjau Cetak Tanda Terima              |
-| P26-1451 | Modul Detail Tanda Terima                       |
-| P26-1480 | Modul Upload Bukti Penerimaan                   |
-| P26-1485 | Modul Upload Bukti Pengembalian                 |
-| P26-1490 | Email Notifikasi                                |
-| P26-1496 | Modul Edit Kategori                             |
+| Ticket   | Modul                              |
+| -------- | ---------------------------------- |
+| P26-1365 | Modul Kategori Tanda Terima        |
+| P26-1375 | Modul Tambah Kategori Tanda Terima |
+| P26-1387 | Modul Tanda Terima Digital         |
+| P26-1397 | Modul Tambah Tanda Terima          |
+| P26-1440 | Modul Edit Tanda Terima            |
+| P26-1445 | Modul Pratinjau Cetak Tanda Terima |
+| P26-1451 | Modul Detail Tanda Terima          |
+| P26-1480 | Modul Upload Bukti Penerimaan      |
+| P26-1485 | Modul Upload Bukti Pengembalian    |
+| P26-1490 | Email Notifikasi                   |
+| P26-1496 | Modul Edit Kategori                |
 
 Untuk generate feature docs otomatis dari Jira, jalankan `npm run fetch:jira`.
 

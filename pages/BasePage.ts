@@ -57,7 +57,9 @@ export class BasePage {
 
   /** Sidebar → Tanda Terima (Digital) */
   async openTandaTerima(): Promise<void> {
-    await this.openSidebarMenu(/^tanda terima/i);
+    // Nama sidebar berbentuk " Tanda Terima 2" (ikon di depan + badge angka),
+    // jadi `^` tak bisa dipakai. Lookahead menolak "Kategori Tanda Terima".
+    await this.openSidebarMenu(/^(?!.*kategori).*tanda terima/i);
   }
 
   /**

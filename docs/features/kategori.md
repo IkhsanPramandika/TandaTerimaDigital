@@ -36,21 +36,15 @@ Modul pengelolaan kategori tanda terima (lihat daftar, tambah, edit).
 
 ## Test Cases
 
-| ID     | Deskripsi                                                     | Priority | Tag                     |
-| ------ | ------------------------------------------------------------- | -------- | ----------------------- |
-| TC-001 | [P26-1365] Menampilkan daftar kategori tanda terima           | High     | `@smoke @positive`      |
-| TC-002 | [P26-1375] Menambah kategori baru dengan data valid           | High     | `@smoke @positive`      |
-| TC-003 | [P26-1496] Mengedit kategori yang sudah ada                   | High     | `@regression @positive` |
-| TC-004 | [P26-1365] Mencari kategori berdasarkan kata kunci            | Medium   | `@regression @positive` |
-| TC-005 | [P26-1365] Memfilter kategori berdasarkan status Aktif        | Medium   | `@regression @positive` |
-| TC-006 | [P26-1365] Mengubah jumlah baris per halaman (pagination)     | Low      | `@regression @positive` |
-| TC-007 | [P26-1496] Menonaktifkan kategori melalui toggle status       | Medium   | `@regression @positive` |
-| TC-008 | [P26-1496] Menghapus kategori dengan konfirmasi popup         | High     | `@regression @positive` |
-| TC-009 | [P26-1375] Gagal menambah kategori saat nama dikosongkan      | Medium   | `@regression @negative` |
-| TC-010 | [P26-1375] Membatalkan penambahan kategori                    | Low      | `@regression @negative` |
-| TC-011 | [P26-1375] Nama kategori pada batas maksimal 100 karakter     | Low      | `@regression @edge`     |
-| TC-012 | [P26-1375] Nama kategori melebihi batas maksimal ditolak      | Low      | `@regression @edge`     |
-| TC-013 | [P26-1375] Menambah kategori lengkap dengan divisi & variabel | High     | `@regression @positive` |
+> Cakupan sengaja dijaga **tipis (smoke saja)**. Kategori adalah master-data
+> yang dimaintain 1 admin dengan risiko rendah, sehingga effort pengujian
+> difokuskan ke modul Tanda Terima. Verifikasi edit/hapus/filter/pagination
+> dilakukan manual/exploratory bila diperlukan.
+
+| ID     | Deskripsi                                           | Priority | Tag                |
+| ------ | --------------------------------------------------- | -------- | ------------------ |
+| TC-001 | [P26-1365] Menampilkan daftar kategori tanda terima | High     | `@smoke @positive` |
+| TC-002 | [P26-1375] Menambah kategori baru dengan data valid | High     | `@smoke @positive` |
 
 ### TC-001: [P26-1365] Menampilkan daftar kategori
 
@@ -61,23 +55,5 @@ Modul pengelolaan kategori tanda terima (lihat daftar, tambah, edit).
 ### TC-002: [P26-1375] Menambah kategori baru dengan data valid
 
 - **Precondition:** Requester login, berada di halaman Kategori.
-- **Steps:** Klik Tambah → isi nama & deskripsi → Simpan.
-- **Expected Result:** Notifikasi sukses tampil; kategori muncul di tabel.
-
-### TC-003: [P26-1375] Gagal menambah kategori saat nama dikosongkan
-
-- **Precondition:** Form tambah kategori terbuka.
-- **Steps:** Kosongkan nama → Simpan.
-- **Expected Result:** Validasi menahan submit / muncul pesan error.
-
-### TC-004: [P26-1496] Mengedit kategori yang sudah ada
-
-- **Precondition:** Minimal satu kategori tersedia.
-- **Steps:** Klik Edit pada baris → ubah nama → Simpan.
-- **Expected Result:** Notifikasi sukses; perubahan tersimpan.
-
-### TC-005: [P26-1375] Nama kategori dengan karakter maksimal (edge)
-
-- **Precondition:** Form tambah kategori terbuka.
-- **Steps:** Isi nama dengan string panjang (boundary) → Simpan.
-- **Expected Result:** Sistem menangani sesuai batasan (tersimpan atau ditolak dengan pesan jelas).
+- **Steps:** Klik Tambah → isi nama & divisi → Simpan.
+- **Expected Result:** Sukses (form tertutup, kembali ke daftar); kategori muncul di tabel.

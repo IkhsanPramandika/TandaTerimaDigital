@@ -40,7 +40,6 @@ export class KategoriPage extends BasePage {
   readonly simpanButton: Locator;
   readonly closeButton: Locator;
   readonly tabel: Locator;
-  readonly successNotification: Locator;
   readonly errorMessage: Locator;
   readonly searchInput: Locator;
   readonly searchButton: Locator;
@@ -56,29 +55,31 @@ export class KategoriPage extends BasePage {
       name: /kategori tanda terima/i,
     });
     this.tambahButton = page.getByRole("button", { name: /tambah kategori/i });
-    this.dialog = page.getByRole("dialog", { name: /tambah kategori/i });
-    this.namaInput = page.getByRole("textbox", { name: /nama kategori/i });
-    this.pilihDivisiButton = page.getByRole("button", {
+    // Dialog aktif (Tambah/Edit Kategori) — semua field form di-scope ke sini
+    // agar tidak bentrok dengan filter list (mis. search "Nama Kategori").
+    this.dialog = page
+      .getByRole("dialog")
+      .filter({ hasText: /kategori/i })
+      .last();
+    this.namaInput = this.dialog.getByPlaceholder(/masukkan nama kategori/i);
+    this.pilihDivisiButton = this.dialog.getByRole("button", {
       name: /pilih divisi/i,
     });
-    this.konfirmasiDivisiButton = page.getByRole("button", {
-      name: /divisi dipilih/i,
-    });
-    this.statusSelect = this.dialog.getByLabel(/status/i);
-    this.tambahVariabelButton = page.getByRole("button", {
+    this.konfirmasiDivisiButton = this.pilihDivisiButton;
+    this.statusSelect = this.dialog.getByRole("combobox", { name: /status/i });
+    this.tambahVariabelButton = this.dialog.getByRole("button", {
       name: /tambah variabel/i,
     });
-    this.namaVariabelInputs = page.getByRole("textbox", {
+    this.namaVariabelInputs = this.dialog.getByRole("textbox", {
       name: /masukkan nama variabel/i,
     });
-    this.tipeDataComboboxes = page.getByRole("combobox");
-    this.simpanButton = page.getByRole("button", { name: /simpan/i });
+    this.tipeDataComboboxes = this.dialog.getByRole("combobox");
+    this.simpanButton = this.dialog.getByRole("button", { name: /simpan/i });
     this.closeButton = page
       .getByRole("button", { name: /close|tutup/i })
       .or(page.locator('[aria-label="Close"], [aria-label="close"]'))
       .first();
-    this.tabel = page.locator("table");
-    this.successNotification = page.locator('.alert-success, [role="status"]');
+    this.tabel = page.locator("table").first();
     this.errorMessage = page.locator(
       '.alert-danger, [role="alert"], .invalid-feedback',
     );
@@ -121,13 +122,17 @@ export class KategoriPage extends BasePage {
     await this.namaInput.fill(nama);
   }
 
-  /** Select one or more divisi from the multiselect dropdown. */
+  /** Select one or more divisi from the inline checkbox dropdown. */
   async pilihDivisi(divisi: string[]): Promise<void> {
     await this.pilihDivisiButton.click();
     for (const nama of divisi) {
-      await this.page.getByRole("checkbox", { name: nama }).check();
+      await this.dialog
+        .getByRole("checkbox", { name: nama, exact: true })
+        .check();
     }
-    await this.konfirmasiDivisiButton.click();
+    // Tutup dropdown divisi dengan klik heading dialog (tombol "Pilih divisi"
+    // berubah label setelah memilih, jadi tidak bisa dipakai untuk menutup).
+    await this.dialog.getByRole("heading").first().click();
   }
 
   /** Set the kategori status (e.g. "Active" / "Inactive"). */
@@ -161,10 +166,14 @@ export class KategoriPage extends BasePage {
     await this.simpanButton.click();
   }
 
-  /** Create a kategori with only a name (minimal happy path). */
-  async tambahKategori(nama: string): Promise<void> {
+  /** Create a kategori (name + mandatory divisi). */
+  async tambahKategori(
+    nama: string,
+    divisi: string[] = ["IT & BUSINESS PROCESS"],
+  ): Promise<void> {
     await this.openTambahForm();
     await this.fillForm(nama);
+    await this.pilihDivisi(divisi);
     await this.simpan();
   }
 
@@ -191,7 +200,10 @@ export class KategoriPage extends BasePage {
   /** Open the edit form for the row matching the given name. */
   async editKategori(namaLama: string, namaBaru: string): Promise<void> {
     const row = this.page.getByRole("row", { name: new RegExp(namaLama, "i") });
-    await row.getByRole("button", { name: /edit/i }).click();
+    // Kolom Aksi hanya berisi satu tombol ikon (tanpa nama) yang langsung
+    // membuka dialog "Edit Kategori".
+    await row.getByRole("cell").last().getByRole("button").first().click();
+    await expect(this.dialog).toBeVisible();
     await this.namaInput.fill(namaBaru);
     await this.simpan();
   }
@@ -206,9 +218,17 @@ export class KategoriPage extends BasePage {
     await expect(this.tabel).toBeVisible();
   }
 
-  /** Assert a success notification appeared. */
+  /**
+   * Assert the save succeeded. Aplikasi tidak menampilkan popup/toast sukses;
+   * sukses ditandai form (dialog) tertutup & halaman kembali ke daftar.
+   */
   async expectSuccess(): Promise<void> {
-    await expect(this.successNotification).toBeVisible();
+    await expect(this.dialog).toBeHidden();
+  }
+
+  /** Assert the submit was blocked by validation: the form dialog stays open. */
+  async expectSubmitBlocked(): Promise<void> {
+    await expect(this.dialog).toBeVisible();
   }
 
   /** Assert a row with the given name exists in the table. */

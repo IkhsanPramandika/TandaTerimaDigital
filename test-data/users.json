@@ -2,13 +2,39 @@
   "requester": {
     "username": "",
     "password": "",
-    "role": "Pembuat Tanda Terima"
+    "role": "Pembuat Tanda Terima",
+    "envPrefix": "REQUESTER"
   },
-  "approver1": { "username": "", "password": "", "role": "Approver Level 1" },
-  "approver2": { "username": "", "password": "", "role": "Approver Level 2" },
-  "approver3": { "username": "", "password": "", "role": "Approver Level 3" },
-  "approver4": { "username": "", "password": "", "role": "Approver Level 4" },
-  "approver5": { "username": "", "password": "", "role": "Approver Level 5" },
+  "approver1": {
+    "username": "",
+    "password": "",
+    "role": "Approver Level 1",
+    "envPrefix": "APPROVER1"
+  },
+  "approver2": {
+    "username": "",
+    "password": "",
+    "role": "Approver Level 2",
+    "envPrefix": "APPROVER2"
+  },
+  "approver3": {
+    "username": "",
+    "password": "",
+    "role": "Approver Level 3",
+    "envPrefix": "APPROVER3"
+  },
+  "approver4": {
+    "username": "",
+    "password": "",
+    "role": "Approver Level 4",
+    "envPrefix": "APPROVER4"
+  },
+  "approver5": {
+    "username": "",
+    "password": "",
+    "role": "Approver Level 5",
+    "envPrefix": "APPROVER5"
+  },
   "invalidUser": {
     "username": "wronguser",
     "password": "wrongpass",

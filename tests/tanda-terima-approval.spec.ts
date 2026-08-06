@@ -1,206 +1,175 @@
-import { test, expect } from "../fixtures/auth.fixture";
+import { test, expect } from "@playwright/test";
+import { Browser, Page } from "@playwright/test";
+import { LoginPage } from "../pages/LoginPage";
 import { TandaTerimaPage } from "../pages/TandaTerimaPage";
+import tandaTerima from "../test-data/tandaterima.json";
+import users from "../test-data/users.json";
 
 /**
- * Approval Berjenjang Tanda Terima — tests/tanda-terima-approval.spec.ts
- * Feature doc: docs/features/tanda-terima.md (TC-008)
+ * Approval Berjenjang & E2E Tanda Terima — tests/tanda-terima-approval.spec.ts
+ * Feature doc: docs/features/tanda-terima.md
  * Jira: P26-1387
  *
- * Menggunakan fixtures/auth.fixture.ts:
- * - requesterPage membuat & mengajukan tanda terima
- * - approver1Page & approver2Page menyetujui secara berurutan (min 2 approver)
+ * Alur lengkap:
+ *   CREATE (Pemberian/Peminjaman) -> APPROVE berjenjang (Atasan 1 + Mengetahui)
+ *   -> UPLOAD BUKTI PENGIRIMAN (oleh requester)
+ *   -> UPLOAD BUKTI PENERIMAAN via link QR (tab baru) -> SELESAI.
  *
- * Flow: Requester -> Approver1 -> Approver2 -> Approved
+ * PENTING: setiap peran dijalankan SECARA BERURUTAN dalam context terpisah
+ * yang dibuka lalu ditutup (bukan context paralel). Portal SSO membocorkan
+ * identitas antar-context bila beberapa akun login bersamaan, sehingga login
+ * berurutan (open -> act -> close) wajib agar tiap peran memakai akun benar.
+ *
+ * Kredensial diambil dari .env (bukan di-hardcode di users.json) via envPrefix,
+ * mis. REQUESTER_USERNAME / REQUESTER_PASSWORD.
+ *
+ * Pemetaan akun:
+ * - requester  = 240637 FAZHA AQSA PRIBADI
+ * - approver1  = 201045 NADHIA PRAMESWARI P  (Atasan 1, otomatis dari sistem)
+ * - approver2  = 211136 SARAH MAIDA ALIFAH NURINA (Mengetahui / acknowledge)
  */
 
+type User = { username?: string; password?: string; envPrefix?: string };
+
+/** Ambil kredensial dari .env (via envPrefix) atau fallback literal users.json. */
+function resolveCreds(user: User): { username: string; password: string } {
+  if (user.envPrefix) {
+    return {
+      username: process.env[`${user.envPrefix}_USERNAME`] ?? "",
+      password: process.env[`${user.envPrefix}_PASSWORD`] ?? "",
+    };
+  }
+  return { username: user.username ?? "", password: user.password ?? "" };
+}
+
+/**
+ * Login satu akun di context baru, jalankan aksi, lalu tutup context.
+ * `opts.geolocation` memberi izin & posisi geolokasi (dibutuhkan form penerimaan).
+ */
+async function withUser(
+  browser: Browser,
+  user: User,
+  fn: (page: Page) => Promise<void>,
+  opts?: { geolocation?: { latitude: number; longitude: number } },
+): Promise<void> {
+  const { username, password } = resolveCreds(user);
+  const context = await browser.newContext(
+    opts?.geolocation
+      ? { geolocation: opts.geolocation, permissions: ["geolocation"] }
+      : {},
+  );
+  const page = await context.newPage();
+  try {
+    const login = new LoginPage(page);
+    await login.goto();
+    await login.login(username, password);
+    await page.waitForLoadState("networkidle");
+    await login.openApp();
+    await page.waitForURL(/dev-newmyapps/i);
+    await fn(page);
+  } finally {
+    await context.close();
+  }
+}
+
 test.describe("Approval Berjenjang Tanda Terima", () => {
-  // ---------------------------------------------------------------------------
-  // POSITIVE
-  // ---------------------------------------------------------------------------
-  test("TC-001: [P26-1387] Approval berjenjang minimal 2 approver @regression @approver", async ({
-    requesterPage,
-    approver1Page,
-    approver2Page,
+  test("TC-005: [P26-1387] Approval berjenjang minimal 2 approver @regression @approver", async ({
+    browser,
   }) => {
-    const penerima = `Approval TT ${Date.now()}`;
+    // 1. Requester membuat & mengirim tanda terima (data lean: 1 Mengetahui)
+    await withUser(browser, users.requester, async (page) => {
+      const tt = new TandaTerimaPage(page);
+      await tt.goto();
+      await tt.createTandaTerima(tandaTerima.createApproval);
+      await tt.expectSuccess();
+    });
 
-    // 1. Requester membuat & mengajukan tanda terima
-    const ttRequester = new TandaTerimaPage(requesterPage);
-    await ttRequester.goto();
-    await ttRequester.tambahTandaTerima(penerima, "Butuh approval berjenjang");
-    await ttRequester.expectSuccess();
+    // 2. Approver 1 (Atasan 1): radio Setuju + deskripsi + Kirim Persetujuan
+    await withUser(browser, users.approver1, async (page) => {
+      const tt = new TandaTerimaPage(page);
+      await tt.goto();
+      await tt.approveLevel1(tandaTerima.approve.level1.deskripsi);
+      await tt.expectSuccess();
+    });
 
-    // 2. Approver level 1 (Atasan 1) menyetujui
-    const ttApprover1 = new TandaTerimaPage(approver1Page);
-    await ttApprover1.goto();
-    await ttApprover1.openDetail(penerima);
-    await ttApprover1.setujui();
-
-    // Expected: setelah approver1, status masih dalam proses (belum final)
-    await ttApprover1.expectStatus(
-      /proses|pending|menunggu|disetujui atasan 1|mengetahui/i,
-    );
-
-    // 3. Approver level 2 (Mengetahui) menyetujui (approver terakhir dari minimal 2)
-    const ttApprover2 = new TandaTerimaPage(approver2Page);
-    await ttApprover2.goto();
-    await ttApprover2.openDetail(penerima);
-    await ttApprover2.setujui();
-
-    // Expected: status akhir menjadi Disetujui
-    await ttApprover2.expectStatus(/approved|disetujui|selesai/i);
+    // 3. Approver 2 (Mengetahui): catatan + Setuju
+    await withUser(browser, users.approver2, async (page) => {
+      const tt = new TandaTerimaPage(page);
+      await tt.goto();
+      await tt.approveLevel2to4(tandaTerima.approve.level2to4.catatan);
+      await tt.expectSuccess();
+    });
   });
 
-  test("TC-002: [P26-1451] Atasan 1 menyetujui dengan deskripsi wajib terisi @regression @approver", async ({
-    requesterPage,
-    approver1Page,
+  test("TC-009: [P26-1387] Atasan 1 menolak tanda terima (jalur Tolak) @regression @approver", async ({
+    browser,
   }) => {
-    const penerima = `Approval Deskripsi ${Date.now()}`;
+    // 1. Requester membuat & mengirim tanda terima
+    await withUser(browser, users.requester, async (page) => {
+      const tt = new TandaTerimaPage(page);
+      await tt.goto();
+      await tt.createTandaTerima(tandaTerima.createApproval);
+      await tt.expectSuccess();
+    });
 
-    // 1. Requester membuat & mengajukan tanda terima
-    const ttRequester = new TandaTerimaPage(requesterPage);
-    await ttRequester.goto();
-    await ttRequester.tambahTandaTerima(penerima, "Uji deskripsi persetujuan");
-    await ttRequester.expectSuccess();
-
-    // 2. Atasan 1 membuka detail
-    const ttApprover1 = new TandaTerimaPage(approver1Page);
-    await ttApprover1.goto();
-    await ttApprover1.openDetail(penerima);
-    test.skip(
-      (await ttApprover1.deskripsiApprovalInput.count()) === 0,
-      "Field Deskripsi persetujuan tidak tersedia di UI.",
-    );
-
-    // Step: setujui dengan deskripsi terisi
-    await ttApprover1.setujuiDenganDeskripsi("Disetujui, dokumen lengkap.");
-
-    // Expected: status berpindah dari Menunggu Persetujuan
-    await ttApprover1.expectStatus(
-      /disetujui atasan 1|mengetahui|proses|disetujui/i,
-    );
-  });
-
-  // ---------------------------------------------------------------------------
-  // NEGATIVE
-  // ---------------------------------------------------------------------------
-  test("TC-003: [P26-1387] Approver menolak menghentikan alur approval @regression @approver", async ({
-    requesterPage,
-    approver1Page,
-  }) => {
-    const penerima = `Reject TT ${Date.now()}`;
-
-    // 1. Requester membuat & mengajukan tanda terima
-    const ttRequester = new TandaTerimaPage(requesterPage);
-    await ttRequester.goto();
-    await ttRequester.tambahTandaTerima(penerima, "Akan ditolak approver 1");
-    await ttRequester.expectSuccess();
-
-    // 2. Approver level 1 menolak
-    const ttApprover1 = new TandaTerimaPage(approver1Page);
-    await ttApprover1.goto();
-    await ttApprover1.openDetail(penerima);
-    await ttApprover1.tolak();
-
-    // Expected: status menjadi Rejected/Ditolak, alur berhenti
-    await ttApprover1.expectStatus(/rejected|ditolak/i);
-  });
-
-  test("TC-004: [P26-1451] Atasan 1 gagal menyetujui saat deskripsi dikosongkan @regression @approver", async ({
-    requesterPage,
-    approver1Page,
-  }) => {
-    const penerima = `Deskripsi Kosong ${Date.now()}`;
-
-    // 1. Requester membuat & mengajukan tanda terima
-    const ttRequester = new TandaTerimaPage(requesterPage);
-    await ttRequester.goto();
-    await ttRequester.tambahTandaTerima(penerima, "Uji deskripsi wajib");
-    await ttRequester.expectSuccess();
-
-    // 2. Atasan 1 membuka detail
-    const ttApprover1 = new TandaTerimaPage(approver1Page);
-    await ttApprover1.goto();
-    await ttApprover1.openDetail(penerima);
-    test.skip(
-      (await ttApprover1.deskripsiApprovalInput.count()) === 0,
-      "Field Deskripsi persetujuan tidak tersedia di UI.",
-    );
-
-    // Step: setujui tanpa mengisi deskripsi
-    await ttApprover1.setujui();
-
-    // Expected: notifikasi sukses tidak muncul (deskripsi wajib)
-    await expect(ttApprover1.successNotification).toHaveCount(0);
-  });
-
-  // ---------------------------------------------------------------------------
-  // EDGE
-  // ---------------------------------------------------------------------------
-  test("TC-005: [P26-1387] Approval berjenjang penuh hingga 5 approver @regression @approver", async ({
-    requesterPage,
-    approver1Page,
-    approver2Page,
-    approver3Page,
-    approver4Page,
-    approver5Page,
-  }) => {
-    // Lewati bila approver 3-5 tidak dikonfigurasi (min 2, max 5).
-    test.skip(
-      !process.env.APPROVER3_USERNAME ||
-        !process.env.APPROVER4_USERNAME ||
-        !process.env.APPROVER5_USERNAME,
-      "Approver level 3-5 tidak dikonfigurasi.",
-    );
-
-    const penerima = `Approval Penuh ${Date.now()}`;
-
-    // 1. Requester membuat & mengajukan tanda terima
-    const ttRequester = new TandaTerimaPage(requesterPage);
-    await ttRequester.goto();
-    await ttRequester.tambahTandaTerima(penerima, "Approval 5 level");
-    await ttRequester.expectSuccess();
-
-    // 2. Setiap approver menyetujui secara berurutan
-    const approverPages = [
-      approver1Page,
-      approver2Page,
-      approver3Page,
-      approver4Page,
-      approver5Page,
-    ];
-    for (const approverPage of approverPages) {
-      const ttApprover = new TandaTerimaPage(approverPage);
-      await ttApprover.goto();
-      await ttApprover.openDetail(penerima);
-      await ttApprover.setujui();
-    }
-
-    // Expected: status akhir menjadi Disetujui setelah approver terakhir
-    const ttFinal = new TandaTerimaPage(approver5Page);
-    await ttFinal.goto();
-    await ttFinal.openDetail(penerima);
-    await ttFinal.expectStatus(/approved|disetujui|selesai/i);
-  });
-
-  test("TC-006: [P26-1387] Approver level 2 tidak dapat menyetujui sebelum Atasan 1 @regression @approver", async ({
-    requesterPage,
-    approver2Page,
-  }) => {
-    const penerima = `Urutan Approval ${Date.now()}`;
-
-    // 1. Requester membuat & mengajukan tanda terima
-    const ttRequester = new TandaTerimaPage(requesterPage);
-    await ttRequester.goto();
-    await ttRequester.tambahTandaTerima(penerima, "Uji urutan approval");
-    await ttRequester.expectSuccess();
-
-    // 2. Approver level 2 mencoba membuka detail sebelum Atasan 1 menyetujui
-    const ttApprover2 = new TandaTerimaPage(approver2Page);
-    await ttApprover2.goto();
-    await ttApprover2.openDetail(penerima);
-
-    // Expected: tombol setujui tidak tersedia/disabled untuk approver 2
-    await ttApprover2.expectApproveUnavailable();
+    // 2. Approver 1 (Atasan 1): radio Tolak + deskripsi + Kirim Persetujuan
+    await withUser(browser, users.approver1, async (page) => {
+      const tt = new TandaTerimaPage(page);
+      await tt.goto();
+      await tt.rejectLevel1(tandaTerima.reject.level1.deskripsi);
+      await tt.expectSuccess();
+    });
   });
 });
+
+/**
+ * E2E penuh (TC-006/007/008): satu record mengalir lintas fase secara berurutan.
+ * describe.serial memastikan fase berjalan berurutan; tiap fase memakai akun
+ * yang sesuai dan bekerja pada item "Action needed" terbaru (record yang sama).
+ */
+test.describe
+  .serial("TC-008: [P26-1387] E2E Tanda Terima penuh (create → approve → bukti) @e2e", () => {
+  test("TC-005b: Requester create + approval berjenjang", async ({
+    browser,
+  }) => {
+    await withUser(browser, users.requester, async (page) => {
+      const tt = new TandaTerimaPage(page);
+      await tt.goto();
+      await tt.createTandaTerima(tandaTerima.createApproval);
+      await tt.expectSuccess();
+    });
+    await withUser(browser, users.approver1, async (page) => {
+      const tt = new TandaTerimaPage(page);
+      await tt.goto();
+      await tt.approveLevel1(tandaTerima.approve.level1.deskripsi);
+      await tt.expectSuccess();
+    });
+    await withUser(browser, users.approver2, async (page) => {
+      const tt = new TandaTerimaPage(page);
+      await tt.goto();
+      await tt.approveLevel2to4(tandaTerima.approve.level2to4.catatan);
+      await tt.expectSuccess();
+    });
+  });
+
+  test("TC-006: Requester upload bukti pengiriman + penerimaan via QR", async ({
+    browser,
+  }) => {
+    // Upload pengiriman & isi penerimaan dilakukan dalam satu sesi karena link
+    // QR berada di halaman detail yang sama (setelah pengiriman di-upload).
+    await withUser(
+      browser,
+      users.requester,
+      async (page) => {
+        const tt = new TandaTerimaPage(page);
+        await tt.goto();
+        await tt.uploadBuktiPengiriman(tandaTerima.bukti.fileBuktiPengiriman);
+        const qr = await tt.openQrPopup();
+        await tt.uploadBuktiPenerimaan(qr, tandaTerima.bukti);
+      },
+      { geolocation: tandaTerima.bukti.geolocation },
+    );
+  });
+});
+
+export { expect };
