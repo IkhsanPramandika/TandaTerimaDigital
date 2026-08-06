@@ -19,12 +19,12 @@ Modul autentikasi ke aplikasi Tanda Terima Digital.
 
 ## Test Cases
 
+> Login adalah fungsi portal **existing** dan di luar scope Tanda Terima Digital, sehingga cakupannya sengaja minimal (1 positif + 1 negatif). Autentikasi requester untuk test lain ditangani oleh `global-setup`.
+
 | ID     | Deskripsi                                        | Priority | Tag                     |
 | ------ | ------------------------------------------------ | -------- | ----------------------- |
 | TC-001 | Login berhasil dengan kredensial requester valid | High     | `@smoke @positive`      |
 | TC-002 | Login gagal dengan kredensial tidak valid        | High     | `@regression @negative` |
-| TC-003 | Login gagal dengan field dikosongkan             | Medium   | `@regression @negative` |
-| TC-004 | Login berhasil untuk setiap approver (level 1-5) | High     | `@regression @approver` |
 
 ### TC-001: Login berhasil dengan kredensial requester valid
 
@@ -32,8 +32,8 @@ Modul autentikasi ke aplikasi Tanda Terima Digital.
 - **Steps:**
   1. Buka halaman login.
   2. Isi username & password requester dari `process.env`.
-  3. Klik tombol Login.
-- **Expected Result:** Redirect keluar dari halaman `/login` dan sesi terautentikasi.
+  3. Klik tombol Login lalu masuk ke aplikasi "NEW MYAPPS - DEV".
+- **Expected Result:** Keluar dari halaman `/login` dan mendarat di domain aplikasi (`dev-newmyapps`).
 
 ### TC-002: Login gagal dengan kredensial tidak valid
 
@@ -42,20 +42,4 @@ Modul autentikasi ke aplikasi Tanda Terima Digital.
   1. Buka halaman login.
   2. Isi username & password yang salah.
   3. Klik tombol Login.
-- **Expected Result:** Tetap di halaman login / muncul pesan error.
-
-### TC-003: Login gagal dengan field dikosongkan
-
-- **Precondition:** -
-- **Steps:**
-  1. Buka halaman login.
-  2. Biarkan username & password kosong.
-  3. Klik tombol Login.
-- **Expected Result:** Tetap di halaman login (validasi form).
-
-### TC-004: Login berhasil untuk setiap approver (level 1-5)
-
-- **Precondition:** Approver 1-5 terdaftar dan kredensial tersedia di `process.env`.
-- **Steps:**
-  1. Untuk tiap approver, buka halaman login dan login.
-- **Expected Result:** Setiap approver berhasil login (jika kredensial tersedia).
+- **Expected Result:** Tetap di halaman login & form login masih tampil (gagal masuk).
