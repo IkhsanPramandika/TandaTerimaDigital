@@ -12,8 +12,8 @@ export default defineConfig({
   // Global setup: login as requester and save storage state to auth.json
   globalSetup: require.resolve("./global-setup"),
 
-  // Retry on CI only
-  retries: isCI ? 2 : 0,
+  // Retry: 2x di CI, 1x lokal (alur E2E/SSO kadang flaky pada full-suite run)
+  retries: isCI ? 2 : 1,
 
   // Parallel workers
   workers: isCI ? 2 : 1,
