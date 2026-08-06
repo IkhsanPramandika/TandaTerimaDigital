@@ -118,7 +118,7 @@ Untuk generate feature docs otomatis dari Jira, jalankan `npm run fetch:jira`.
 - **Trigger:**
   - `push` ke branch `main`
   - `pull_request` ke branch `main`
-  - `schedule` setiap hari pukul **08:00 WIB** (`cron: '0 1 * * *'` UTC+7)
+  - `schedule` setiap hari pukul **09:00 WIB** (`cron: '0 2 * * *'` UTC)
 - **Workflow file:** `.github/workflows/playwright.yml`
 
 ### GitHub Secrets yang diperlukan
