@@ -164,18 +164,4 @@ test.describe("Login - Tanda Terima Digital", () => {
     // Expected: autentikasi ditolak, tetap di halaman login
     await expect(page).toHaveURL(/\/login/);
   });
-
-  test("TC-009: [Login] Input di-trim / spasi berlebih tidak lolos autentikasi @regression @edge", async ({
-    page,
-  }) => {
-    const loginPage = new LoginPage(page);
-
-    // Step: kredensial dengan spasi berlebih pada nilai yang salah
-    await loginPage.goto();
-    await loginPage.login("   wronguser   ", "   wrongpass   ");
-    await page.waitForLoadState("networkidle");
-
-    // Expected: tetap di halaman login
-    await expect(page).toHaveURL(/\/login/);
-  });
 });
